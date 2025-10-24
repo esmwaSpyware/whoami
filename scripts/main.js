@@ -186,6 +186,9 @@ async function initAboutScene() {
         // Create about elements
         createAboutElements();
         
+        // Add cybersecurity visualization
+        createCybersecurityElements();
+        
         console.log('About scene initialized successfully');
     } catch (error) {
         console.error('Error initializing about scene:', error);
@@ -229,8 +232,8 @@ async function initProjectScenes() {
 function createHeroElements() {
     if (!heroScene) return;
     
-    // Create floating geometric shapes
-    const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+    // Create floating geometric shapes with shared geometry
+    const geometry = new THREE.SphereGeometry(0.5, 16, 16); // Reduced complexity
     const material = new THREE.MeshStandardMaterial({
         color: 0x00f5ff,
         metalness: 0.8,
@@ -238,8 +241,8 @@ function createHeroElements() {
         emissive: 0x001122
     });
     
-    for (let i = 0; i < 20; i++) {
-        const sphere = new THREE.Mesh(geometry, material);
+    for (let i = 0; i < 10; i++) { // Reduced count
+        const sphere = new THREE.Mesh(geometry, material.clone());
         sphere.position.set(
             (Math.random() - 0.5) * 20,
             (Math.random() - 0.5) * 20,
@@ -247,6 +250,15 @@ function createHeroElements() {
         );
         heroScene.add(sphere);
     }
+    
+    // Add network topology visualization
+    createNetworkTopology();
+    
+    // Add floating data packets
+    createDataPackets();
+    
+    // Add fiber optic cable simulation
+    createFiberOpticCables();
 }
 
 // Create about elements
@@ -489,6 +501,8 @@ function initScrollAnimations() {
 
 // Initialize mouse interactions
 function initMouseInteractions() {
+    let mouseMoveTimeout;
+    
     document.addEventListener('mousemove', (event) => {
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -499,6 +513,183 @@ function initMouseInteractions() {
                 x: mouse.x * 2,
                 y: mouse.y * 2,
                 duration: 1,
+                ease: "power2.out"
+            });
+        }
+        
+        // Throttle particle creation
+        clearTimeout(mouseMoveTimeout);
+        mouseMoveTimeout = setTimeout(() => {
+            createInteractiveParticles(event.clientX, event.clientY);
+        }, 100);
+    });
+    
+    // Add click interactions
+    document.addEventListener('click', (event) => {
+        // Only create click effect on canvas areas
+        if (event.target.tagName === 'CANVAS' || event.target.closest('section')) {
+            createClickEffect(event.clientX, event.clientY);
+        }
+    });
+    
+    // Add scroll-based animations
+    let scrollTimeout;
+    window.addEventListener('scroll', () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            updateScrollAnimations();
+        }, 50);
+    });
+}
+
+// Create interactive particles on mouse move
+function createInteractiveParticles(x, y) {
+    if (!heroScene || !THREE) return;
+    
+    try {
+        // Throttle particle creation to avoid performance issues
+        if (createInteractiveParticles.lastTime && Date.now() - createInteractiveParticles.lastTime < 100) {
+            return;
+        }
+        createInteractiveParticles.lastTime = Date.now();
+        
+        // Convert screen coordinates to normalized device coordinates
+        const mouseX = (x / window.innerWidth) * 2 - 1;
+        const mouseY = -(y / window.innerHeight) * 2 + 1;
+        
+        // Create temporary particle
+        const particleGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+        const particleMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00f5ff,
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+        particle.position.set(mouseX * 10, mouseY * 10, -5);
+        heroScene.add(particle);
+        
+        // Animate and remove particle
+        if (typeof gsap !== 'undefined') {
+            gsap.to(particle.scale, {
+                x: 0,
+                y: 0,
+                z: 0,
+                duration: 1,
+                ease: "power2.out",
+                onComplete: () => {
+                    if (heroScene && particle.parent) {
+                        heroScene.remove(particle);
+                    }
+                }
+            });
+            
+            gsap.to(particle.material, {
+                opacity: 0,
+                duration: 1,
+                ease: "power2.out"
+            });
+        } else {
+            // Fallback animation without GSAP
+            setTimeout(() => {
+                if (heroScene && particle.parent) {
+                    heroScene.remove(particle);
+                }
+            }, 1000);
+        }
+    } catch (error) {
+        console.error('Error creating interactive particles:', error);
+    }
+}
+
+// Create click effect
+function createClickEffect(x, y) {
+    if (!heroScene || !THREE) return;
+    
+    try {
+        const mouseX = (x / window.innerWidth) * 2 - 1;
+        const mouseY = -(y / window.innerHeight) * 2 + 1;
+        
+        // Create ripple effect
+        for (let i = 0; i < 3; i++) {
+            const rippleGeometry = new THREE.RingGeometry(0.1, 0.5, 16);
+            const rippleMaterial = new THREE.MeshBasicMaterial({
+                color: 0x8b5cf6,
+                transparent: true,
+                opacity: 0.8,
+                side: THREE.DoubleSide
+            });
+            
+            const ripple = new THREE.Mesh(rippleGeometry, rippleMaterial);
+            ripple.position.set(mouseX * 10, mouseY * 10, -5);
+            heroScene.add(ripple);
+            
+            if (typeof gsap !== 'undefined') {
+                gsap.to(ripple.scale, {
+                    x: 3,
+                    y: 3,
+                    z: 3,
+                    duration: 1,
+                    ease: "power2.out",
+                    delay: i * 0.1
+                });
+                
+                gsap.to(ripple.material, {
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power2.out",
+                    delay: i * 0.1,
+                    onComplete: () => {
+                        if (heroScene && ripple.parent) {
+                            heroScene.remove(ripple);
+                        }
+                    }
+                });
+            } else {
+                // Fallback animation
+                setTimeout(() => {
+                    if (heroScene && ripple.parent) {
+                        heroScene.remove(ripple);
+                    }
+                }, 1000 + i * 100);
+            }
+        }
+    } catch (error) {
+        console.error('Error creating click effect:', error);
+    }
+}
+
+// Update scroll-based animations
+function updateScrollAnimations() {
+    const scrollY = window.scrollY;
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    const scrollProgress = scrollY / maxScroll;
+    
+    // Update camera rotation based on scroll
+    if (heroCamera) {
+        gsap.to(heroCamera.rotation, {
+            x: scrollProgress * Math.PI * 0.1,
+            y: scrollProgress * Math.PI * 0.2,
+            duration: 0.5,
+            ease: "power2.out"
+        });
+    }
+    
+    // Update particle systems based on scroll
+    updateParticleSystems(scrollProgress);
+}
+
+// Update particle systems based on scroll progress
+function updateParticleSystems(progress) {
+    if (!heroScene) return;
+    
+    // Find all particle systems and update their properties
+    heroScene.traverse((child) => {
+        if (child.material && child.material.opacity !== undefined) {
+            const targetOpacity = 0.3 + (progress * 0.7);
+            gsap.to(child.material, {
+                opacity: targetOpacity,
+                duration: 0.5,
                 ease: "power2.out"
             });
         }
@@ -530,6 +721,31 @@ function initEventListeners() {
             scrollToSection(targetId);
         });
     });
+
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
+
+    // Floating action buttons
+    const backToTopBtn = document.getElementById('back-to-top');
+    if (backToTopBtn) {
+        backToTopBtn.addEventListener('click', scrollToTop);
+    }
+
+    const quickContactBtn = document.getElementById('quick-contact');
+    if (quickContactBtn) {
+        quickContactBtn.addEventListener('click', handleQuickContact);
+    }
+
+    const downloadCvBtn = document.getElementById('download-cv');
+    if (downloadCvBtn) {
+        downloadCvBtn.addEventListener('click', handleDownloadCV);
+    }
+
+    // Back to top button visibility
+    window.addEventListener('scroll', updateBackToTopButton);
 
     // Window resize
     window.addEventListener('resize', handleResize);
@@ -591,22 +807,29 @@ function startAnimationLoop() {
         requestAnimationFrame(animate);
         
         try {
-            if (introScene && introCamera && introRenderer) {
+            // Render intro scene only if it's visible
+            if (introScene && introCamera && introRenderer && !isIntroComplete) {
                 introRenderer.render(introScene, introCamera);
             }
             
-            if (heroScene && heroCamera && heroRenderer) {
+            // Render hero scene only if main portfolio is visible
+            if (heroScene && heroCamera && heroRenderer && isIntroComplete) {
                 heroRenderer.render(heroScene, heroCamera);
             }
             
-            if (aboutScene && aboutCamera && aboutRenderer) {
+            // Render about scene only when about section is visible
+            if (aboutScene && aboutCamera && aboutRenderer && isIntroComplete) {
                 aboutRenderer.render(aboutScene, aboutCamera);
             }
             
-            // Render project scenes
-            projectScenes.forEach(({ scene, camera, renderer }) => {
-                if (scene && camera && renderer) {
+            // Render project scenes only when they're visible
+            projectScenes.forEach(({ scene, camera, renderer }, index) => {
+                if (scene && camera && renderer && isIntroComplete) {
+                    // Only render if the project is in viewport
+                    const projectCanvas = document.getElementById(`project${index + 1}-canvas`);
+                    if (projectCanvas && isElementInViewport(projectCanvas)) {
                     renderer.render(scene, camera);
+                    }
                 }
             });
         } catch (error) {
@@ -615,6 +838,17 @@ function startAnimationLoop() {
     }
     
     animate();
+}
+
+// Check if element is in viewport
+function isElementInViewport(el) {
+    const rect = el.getBoundingClientRect();
+    return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+    );
 }
 
 // Start animation loops
@@ -674,6 +908,414 @@ function hideNotification() {
     }
 }
 
+// Create network topology visualization
+function createNetworkTopology() {
+    if (!heroScene) return;
+    
+    // Create network nodes with shared geometry
+    const nodePositions = [
+        { x: -8, y: 3, z: -5 },
+        { x: -4, y: 1, z: -8 },
+        { x: 0, y: 4, z: -6 },
+        { x: 4, y: 2, z: -7 },
+        { x: 8, y: 3, z: -5 },
+        { x: -6, y: -2, z: -9 },
+        { x: 6, y: -1, z: -8 }
+    ];
+    
+    const nodes = [];
+    const nodeGeometry = new THREE.SphereGeometry(0.3, 12, 12); // Reduced complexity
+    const blueMaterial = new THREE.MeshStandardMaterial({
+        color: 0x00f5ff,
+        emissive: 0x001122,
+        metalness: 0.8,
+        roughness: 0.2
+    });
+    const purpleMaterial = new THREE.MeshStandardMaterial({
+        color: 0x8b5cf6,
+        emissive: 0x220044,
+        metalness: 0.8,
+        roughness: 0.2
+    });
+    
+    // Create nodes
+    nodePositions.forEach((pos, index) => {
+        const nodeMaterial = index % 2 === 0 ? blueMaterial : purpleMaterial;
+        const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+        node.position.set(pos.x, pos.y, pos.z);
+        heroScene.add(node);
+        nodes.push(node);
+        
+        // Add pulsing animation
+        if (typeof gsap !== 'undefined') {
+            gsap.to(node.scale, {
+                x: 1.5,
+                y: 1.5,
+                z: 1.5,
+                duration: 2,
+                repeat: -1,
+                yoyo: true,
+                ease: "power2.inOut",
+                delay: index * 0.2
+            });
+        }
+    });
+    
+    // Create connections between nodes (reduced connections)
+    for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+            if (Math.random() > 0.6) { // 40% chance of connection
+                createConnection(nodes[i], nodes[j]);
+            }
+        }
+    }
+}
+
+// Create connection between two nodes
+function createConnection(node1, node2) {
+    const start = node1.position;
+    const end = node2.position;
+    
+    const geometry = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(start.x, start.y, start.z),
+        new THREE.Vector3(end.x, end.y, end.z)
+    ]);
+    
+    const material = new THREE.LineBasicMaterial({
+        color: 0x00f5ff,
+        transparent: true,
+        opacity: 0.6
+    });
+    
+    const line = new THREE.Line(geometry, material);
+    heroScene.add(line);
+    
+    // Add flowing data animation
+    animateDataFlow(line, start, end);
+}
+
+// Animate data flow along connection
+function animateDataFlow(line, start, end) {
+    const dataPacket = new THREE.Mesh(
+        new THREE.SphereGeometry(0.1, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    dataPacket.position.copy(start);
+    heroScene.add(dataPacket);
+    
+    gsap.to(dataPacket.position, {
+        x: end.x,
+        y: end.y,
+        z: end.z,
+        duration: 3,
+        repeat: -1,
+        ease: "none",
+        onComplete: () => {
+            dataPacket.position.copy(start);
+        }
+    });
+}
+
+// Create floating data packets
+function createDataPackets() {
+    if (!heroScene) return;
+    
+    // Use shared geometry and materials
+    const packetGeometry = new THREE.BoxGeometry(0.2, 0.1, 0.1);
+    const bluePacketMaterial = new THREE.MeshStandardMaterial({
+        color: 0x00f5ff,
+        emissive: 0x001122,
+        transparent: true,
+        opacity: 0.8
+    });
+    const purplePacketMaterial = new THREE.MeshStandardMaterial({
+        color: 0x8b5cf6,
+        emissive: 0x001122,
+        transparent: true,
+        opacity: 0.8
+    });
+    
+    for (let i = 0; i < 8; i++) { // Reduced count
+        const packetMaterial = i % 2 === 0 ? bluePacketMaterial : purplePacketMaterial;
+        const packet = new THREE.Mesh(packetGeometry, packetMaterial);
+        packet.position.set(
+            (Math.random() - 0.5) * 30,
+            (Math.random() - 0.5) * 20,
+            (Math.random() - 0.5) * 20
+        );
+        
+        heroScene.add(packet);
+        
+        // Animate packet movement
+        if (typeof gsap !== 'undefined') {
+            gsap.to(packet.position, {
+                x: packet.position.x + (Math.random() - 0.5) * 20,
+                y: packet.position.y + (Math.random() - 0.5) * 20,
+                z: packet.position.z + (Math.random() - 0.5) * 20,
+                duration: 5 + Math.random() * 5,
+                repeat: -1,
+                yoyo: true,
+                ease: "power2.inOut"
+            });
+            
+            // Add rotation
+            gsap.to(packet.rotation, {
+                y: Math.PI * 2,
+                duration: 2,
+                repeat: -1,
+                ease: "none"
+            });
+        }
+    }
+}
+
+// Create fiber optic cable simulation
+function createFiberOpticCables() {
+    if (!heroScene) return;
+    
+    // Create main fiber trunk
+    const fiberGeometry = new THREE.CylinderGeometry(0.05, 0.05, 25, 8);
+    const fiberMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        metalness: 0.9,
+        roughness: 0.1,
+        emissive: 0x001122
+    });
+    
+    const mainFiber = new THREE.Mesh(fiberGeometry, fiberMaterial);
+    mainFiber.rotation.z = Math.PI / 2;
+    mainFiber.position.set(0, 0, -10);
+    heroScene.add(mainFiber);
+    
+    // Create fiber strands
+    for (let i = 0; i < 8; i++) {
+        const strandGeometry = new THREE.CylinderGeometry(0.01, 0.01, 20, 6);
+        const strandMaterial = new THREE.MeshStandardMaterial({
+            color: new THREE.Color().setHSL(i / 8, 1, 0.5),
+            emissive: new THREE.Color().setHSL(i / 8, 1, 0.1),
+            metalness: 0.8,
+            roughness: 0.2
+        });
+        
+        const strand = new THREE.Mesh(strandGeometry, strandMaterial);
+        strand.position.set(
+            Math.cos(i * Math.PI / 4) * 0.3,
+            Math.sin(i * Math.PI / 4) * 0.3,
+            -10
+        );
+        strand.rotation.z = Math.PI / 2;
+        heroScene.add(strand);
+        
+        // Add light pulse animation
+        gsap.to(strand.material, {
+            emissiveIntensity: 0.5,
+            duration: 1,
+            repeat: -1,
+            yoyo: true,
+            ease: "power2.inOut",
+            delay: i * 0.1
+        });
+    }
+}
+
+// Create cybersecurity visualization
+function createCybersecurityElements() {
+    if (!aboutScene) return;
+    
+    // Create firewall visualization
+    const firewallGeometry = new THREE.BoxGeometry(3, 0.2, 2);
+    const firewallMaterial = new THREE.MeshStandardMaterial({
+        color: 0xef4444,
+        emissive: 0x220000,
+        transparent: true,
+        opacity: 0.8
+    });
+    
+    const firewall = new THREE.Mesh(firewallGeometry, firewallMaterial);
+    firewall.position.set(0, 0, -5);
+    aboutScene.add(firewall);
+    
+    // Create data encryption particles
+    for (let i = 0; i < 50; i++) {
+        const particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+        const particleMaterial = new THREE.MeshBasicMaterial({
+            color: 0x10b981,
+            transparent: true,
+            opacity: 0.7
+        });
+        
+        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+        particle.position.set(
+            (Math.random() - 0.5) * 10,
+            (Math.random() - 0.5) * 10,
+            (Math.random() - 0.5) * 10
+        );
+        aboutScene.add(particle);
+        
+        // Animate encryption process
+        gsap.to(particle.position, {
+            x: (Math.random() - 0.5) * 10,
+            y: (Math.random() - 0.5) * 10,
+            z: (Math.random() - 0.5) * 10,
+            duration: 3 + Math.random() * 2,
+            repeat: -1,
+            ease: "power2.inOut"
+        });
+    }
+}
+
+// Debug function to test 3D interactions
+function debug3DInteractions() {
+    console.log('=== 3D Interaction Debug ===');
+    console.log('Hero Scene:', heroScene ? 'Loaded' : 'Not loaded');
+    console.log('Hero Camera:', heroCamera ? 'Loaded' : 'Not loaded');
+    console.log('Hero Renderer:', heroRenderer ? 'Loaded' : 'Not loaded');
+    console.log('GSAP:', typeof gsap !== 'undefined' ? 'Loaded' : 'Not loaded');
+    console.log('THREE:', typeof THREE !== 'undefined' ? 'Loaded' : 'Not loaded');
+    
+    // Test simple interaction
+    if (heroScene) {
+        console.log('Creating test particle...');
+        const testGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+        const testMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const testMesh = new THREE.Mesh(testGeometry, testMaterial);
+        testMesh.position.set(0, 0, -5);
+        heroScene.add(testMesh);
+        
+        // Animate test mesh
+        if (typeof gsap !== 'undefined') {
+            gsap.to(testMesh.rotation, {
+                y: Math.PI * 2,
+                duration: 2,
+                repeat: -1,
+                ease: "none"
+            });
+            console.log('Test animation started');
+        }
+    }
+}
+
+// Simple mouse interaction test
+function testMouseInteraction() {
+    console.log('Testing mouse interaction...');
+    createInteractiveParticles(window.innerWidth / 2, window.innerHeight / 2);
+}
+
+// Enhanced test function
+function testAllInteractions() {
+    console.log('=== Testing All 3D Interactions ===');
+    
+    // Test mouse interaction
+    console.log('1. Testing mouse particles...');
+    createInteractiveParticles(window.innerWidth / 2, window.innerHeight / 2);
+    
+    // Test click effect
+    console.log('2. Testing click ripple...');
+    createClickEffect(window.innerWidth / 2, window.innerHeight / 2);
+    
+    // Test camera movement
+    console.log('3. Testing camera movement...');
+    if (heroCamera) {
+        gsap.to(heroCamera.position, {
+            x: 2,
+            y: 2,
+            duration: 1,
+            ease: "power2.out",
+            onComplete: () => {
+                gsap.to(heroCamera.position, {
+                    x: 0,
+                    y: 0,
+                    duration: 1,
+                    ease: "power2.out"
+                });
+            }
+        });
+    }
+    
+    console.log('All tests completed! Check the 3D scene for effects.');
+}
+
+// Scroll to top function
+function scrollToTop() {
+    // Add visual feedback
+    const btn = document.getElementById('back-to-top');
+    if (btn) {
+        btn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            btn.style.transform = 'scale(1)';
+        }, 150);
+    }
+    
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+    
+    // Show notification
+    showNotification('Back to Top', 'Scrolled to top of page!', 'success');
+}
+
+// Handle quick contact
+function handleQuickContact() {
+    // Add visual feedback
+    const btn = document.getElementById('quick-contact');
+    if (btn) {
+        btn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            btn.style.transform = 'scale(1)';
+        }, 150);
+    }
+    
+    // Scroll to contact section
+    scrollToSection('contact');
+    
+    // Show notification
+    showNotification('Quick Contact', 'Scrolled to contact section!', 'info');
+}
+
+// Handle download CV
+function handleDownloadCV() {
+    // Add visual feedback
+    const btn = document.getElementById('download-cv');
+    if (btn) {
+        btn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            btn.style.transform = 'scale(1)';
+        }, 150);
+    }
+    
+    // Create a temporary link to download CV
+    const link = document.createElement('a');
+    link.href = '#'; // You can replace this with actual CV URL
+    link.download = 'Exaudi_Simon_Mwakitega_CV.pdf';
+    
+    // For now, show a notification since we don't have an actual CV file
+    showNotification('Download CV', 'CV download will be available soon!', 'info');
+    
+    // You can replace the above with actual CV download:
+    // link.click();
+}
+
+// Update back to top button visibility
+function updateBackToTopButton() {
+    const backToTopBtn = document.getElementById('back-to-top');
+    if (backToTopBtn) {
+        if (window.scrollY > 300) {
+            backToTopBtn.style.opacity = '1';
+            backToTopBtn.style.pointerEvents = 'auto';
+        } else {
+            backToTopBtn.style.opacity = '0';
+            backToTopBtn.style.pointerEvents = 'none';
+        }
+    }
+}
+
 // Export functions for global access
 window.scrollToSection = scrollToSection;
 window.showNotification = showNotification;
+window.debug3DInteractions = debug3DInteractions;
+window.testMouseInteraction = testMouseInteraction;
+window.testAllInteractions = testAllInteractions;
+window.scrollToTop = scrollToTop;
+window.handleQuickContact = handleQuickContact;
+window.handleDownloadCV = handleDownloadCV;
