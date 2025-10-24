@@ -23,7 +23,7 @@ A stunning, fully interactive 3D portfolio website built with Three.js, GSAP, an
 ## Project Structure
 
 ```
-portfolio/
+whoami/
 ├── index.html              # Main HTML file
 ├── package.json            # Dependencies and scripts
 ├── tailwind.config.js      # Tailwind configuration
