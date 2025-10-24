@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Exaudi Simon Mwakitega - 3D Interactive Portfolio</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+    <link rel="stylesheet" href="./styles/output.css">
+    <style>
+        /* Mobile-specific optimizations */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem !important;
+                line-height: 1.2 !important;
+            }
+            .hero-subtitle {
+                font-size: 1.125rem !important;
+                line-height: 1.4 !important;
+            }
+            .project-card {
+                margin-bottom: 1.5rem;
+            }
+            .glass-effect {
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            }
+            /* Improve touch targets */
+            button, .btn-primary, .glass-effect {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            /* Optimize 3D canvas for mobile */
+            canvas {
+                touch-action: none;
+            }
+        }
+        
+        /* iOS Safari specific */
+        @supports (-webkit-touch-callout: none) {
+            .glass-effect {
+                -webkit-backdrop-filter: blur(10px);
+            }
+        }
+        
+        /* Android Chrome specific */
+        @media screen and (-webkit-min-device-pixel-ratio: 0) {
+            .glass-effect {
+                background: rgba(255, 255, 255, 0.1);
+            }
+        }
+        
+        /* Enhanced UX Animations */
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        .fade-in-left {
+            animation: fadeInLeft 0.6s ease-out forwards;
+        }
+        
+        .fade-in-right {
+            animation: fadeInRight 0.6s ease-out forwards;
+        }
+        
+        .scale-in {
+            animation: scaleIn 0.4s ease-out forwards;
+        }
+        
+        .slide-in-bottom {
+            animation: slideInBottom 0.5s ease-out forwards;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes slideInBottom {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Hover effects */
+        .hover-lift {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 245, 255, 0.2);
+        }
+        
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #00f5ff, #8b5cf6);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #8b5cf6, #00f5ff);
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+        }
+    }
+    </script>
+    <!-- Load GSAP via script tag to avoid CORS issues -->
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js?v=1" crossorigin="anonymous"></script>
+</head>
+<body class="bg-dark-bg text-white overflow-x-hidden">
+    <!-- Intro Scene -->
+    <div id="intro-scene" class="fixed inset-0 z-50 bg-dark-bg">
+        <canvas id="intro-canvas" class="w-full h-full"></canvas>
+        <div id="skip-intro" class="absolute top-6 right-6 z-10 glass-effect px-4 py-2 rounded-lg cursor-pointer hover:neon-glow transition-all duration-300">
+            Skip Intro
+        </div>
+        <div id="loading-text" class="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-neon-blue text-lg font-mono">
+            Loading 3D Experience...
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 bg-dark z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="w-16 h-16 mx-auto mb-4 border-4 border-neon-blue border-t-transparent rounded-full animate-spin"></div>
+            <h2 class="text-2xl font-bold text-white mb-2">Loading Portfolio</h2>
+            <div class="w-64 bg-gray-700 rounded-full h-2 mx-auto">
+                <div id="loading-progress" class="bg-gradient-to-r from-neon-blue to-neon-purple h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <p id="loading-text" class="text-gray-400 mt-4">Initializing 3D Environment...</p>
+        </div>
+    </div>
+
+    <!-- Main Portfolio -->
+    <div id="main-portfolio" class="hidden">
+        <!-- Navigation -->
+        <nav class="fixed top-0 left-0 right-0 z-40 glass-effect">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="text-2xl font-bold gradient-text">Exaudi Simon</div>
+                    <div class="hidden md:flex space-x-8 items-center">
+                        <a href="#about" class="nav-link hover:text-neon-blue transition-colors duration-300">About</a>
+                        <a href="#experience" class="nav-link hover:text-neon-blue transition-colors duration-300">Experience</a>
+                        <a href="#projects" class="nav-link hover:text-neon-blue transition-colors duration-300">Projects</a>
+                        <a href="#contact" class="nav-link hover:text-neon-blue transition-colors duration-300">Contact</a>
+                        <button id="theme-toggle" class="glass-effect p-2 rounded-lg hover:neon-glow transition-all duration-300">
+                            <svg id="theme-icon" class="w-5 h-5 text-neon-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <button id="mobile-menu-btn" class="md:hidden text-neon-blue">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section id="hero" class="min-h-screen flex items-center justify-center relative">
+            <canvas id="hero-canvas" class="absolute inset-0 w-full h-full"></canvas>
+            <div class="relative z-10 text-center max-w-4xl mx-auto px-4">
+                <h1 class="hero-title text-5xl md:text-7xl font-bold mb-6 gradient-text animate-fade-in">
+                    Exaudi Simon Mwakitega
+                </h1>
+                <p class="hero-subtitle text-xl md:text-2xl mb-8 text-gray-300 animate-slide-up">
+                    Network & Broadcast Systems Engineer • Full-Stack Developer • Cybersecurity Specialist
+                </p>
+                <p class="text-lg text-gray-400 mb-8 animate-slide-up">
+                    Dodoma, Tanzania • +255 756036032 • exaudmwakitega69@gmail.com
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button class="btn-primary" onclick="scrollToSection('projects')">
+                        View My Work
+                    </button>
+                    <button class="glass-effect px-6 py-3 rounded-lg hover:neon-glow transition-all duration-300" onclick="scrollToSection('contact')">
+                        Get In Touch
+                    </button>
+                </div>
+            </div>
+            <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+                <svg class="w-6 h-6 text-neon-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                </svg>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="section-padding">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-16 gradient-text">About Me</h2>
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div class="space-y-6">
+                        <p class="text-lg text-gray-300 leading-relaxed">
+                            A hybrid Network and Broadcast Engineer with expertise in designing, securing, and maintaining critical infrastructure 
+                            that powers both corporate IT and modern broadcasting environments. Possesses a strong foundation in IP networking, 
+                            fiber optic transmission, and cybersecurity.
+                        </p>
+                        <p class="text-lg text-gray-300 leading-relaxed">
+                            Proven ability to ensure high availability, optimize performance, and implement secure solutions across diverse 
+                            technological landscapes. Experienced in RF systems, digital video broadcasting (DVB), and network automation 
+                            through academic projects, CTF competitions, and practical internships.
+                        </p>
+                        <div class="flex flex-wrap gap-3">
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">Python</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">JavaScript</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">Java</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">Django</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">Flask</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">React</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">PostgreSQL</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">MongoDB</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">Cisco</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">Fortinet</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">DVB-T2</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">Fiber Optics</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">Kali Linux</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">Metasploit</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">Wireshark</span>
+                            <span class="glass-effect px-4 py-2 rounded-full text-sm">Nmap</span>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <canvas id="about-canvas" class="w-full h-96 rounded-lg"></canvas>
+                        <div class="absolute inset-0 glass-effect rounded-lg flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="w-32 h-32 mx-auto mb-4 bg-gradient-to-r from-neon-blue to-neon-purple rounded-full animate-float"></div>
+                                <p class="text-neon-blue font-mono">Interactive 3D Element</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Experience Section -->
+        <section id="experience" class="section-padding bg-dark-card">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-16 gradient-text">Professional Experience</h2>
+                <div class="space-y-8">
+                    <!-- Experience 1 -->
+                    <div class="glass-effect rounded-lg p-6 card-hover">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-neon-blue">IT Officer Intern</h3>
+                                <p class="text-gray-300">National Audit Office of Tanzania (NAOT)</p>
+                            </div>
+                            <span class="text-sm text-gray-400 mt-2 md:mt-0">July 2024 – Dec 2024</span>
+                        </div>
+                        <p class="text-gray-300 mb-4">
+                            Provided technical support for 50+ users, resolving hardware, software, and network issues on Windows and Linux systems. 
+                            Assisted in enforcing IT security policies and managing user access controls via Active Directory.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Windows</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Linux</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Active Directory</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Network Support</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">IT Security</span>
+                        </div>
+                    </div>
+
+                    <!-- Experience 2 -->
+                    <div class="glass-effect rounded-lg p-6 card-hover">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-neon-green">System Administrator Intern</h3>
+                                <p class="text-gray-300">Ardhi University (ARU)</p>
+                            </div>
+                            <span class="text-sm text-gray-400 mt-2 md:mt-0">July 2023 – Oct 2023</span>
+                        </div>
+                        <p class="text-gray-300 mb-4">
+                            Played a pivotal role in a 48-hour disaster recovery operation, successfully restoring university servers 
+                            and data from backups after a fire incident. Automated daily backup routines and implemented network monitoring alerts, 
+                            enhancing system reliability and reducing mean time to resolution (MTTR).
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Disaster Recovery</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Server Administration</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Backup Systems</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Network Monitoring</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Automation</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Education & Certifications Section -->
+        <section id="education" class="section-padding">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-16 gradient-text">Education & Certifications</h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Education -->
+                    <div class="space-y-6">
+                        <h3 class="text-2xl font-bold text-neon-blue mb-6">Education</h3>
+                        <div class="glass-effect rounded-lg p-6 card-hover">
+                            <h4 class="text-lg font-bold text-white mb-2">Bachelor of Science in Digital Content and Broadcasting Engineering</h4>
+                            <p class="text-gray-300 mb-2">University of Dodoma, Dodoma, Tanzania</p>
+                            <p class="text-sm text-gray-400">2021 – Present (Expected Graduation: 2025)</p>
+                            <p class="text-gray-300 mt-3">Focus on digital content creation, broadcasting technologies, and engineering principles</p>
+                        </div>
+                        <div class="glass-effect rounded-lg p-6 card-hover">
+                            <h4 class="text-lg font-bold text-white mb-2">A-Level: Physics, Chemistry, Mathematics</h4>
+                            <p class="text-gray-300 mb-2">Kigoma Secondary School</p>
+                            <p class="text-sm text-gray-400">2019-2021</p>
+                        </div>
+                        <div class="glass-effect rounded-lg p-6 card-hover">
+                            <h4 class="text-lg font-bold text-white mb-2">O-Level: Division II</h4>
+                            <p class="text-gray-300 mb-2">Tandika Secondary School</p>
+                            <p class="text-sm text-gray-400">2014-2018</p>
+                        </div>
+                    </div>
+
+                    <!-- Certifications -->
+                    <div class="space-y-6">
+                        <h3 class="text-2xl font-bold text-neon-green mb-6">Certifications</h3>
+                        <div class="space-y-4">
+                            <div class="glass-effect rounded-lg p-4 card-hover">
+                                <h4 class="text-lg font-bold text-white">Ethical Hacker</h4>
+                                <p class="text-gray-300 text-sm">Cisco</p>
+                            </div>
+                            <div class="glass-effect rounded-lg p-4 card-hover">
+                                <h4 class="text-lg font-bold text-white">Introduction to Cybersecurity</h4>
+                                <p class="text-gray-300 text-sm">Cisco</p>
+                            </div>
+                            <div class="glass-effect rounded-lg p-4 card-hover">
+                                <h4 class="text-lg font-bold text-white">Networking Basics</h4>
+                                <p class="text-gray-300 text-sm">Cisco</p>
+                            </div>
+                            <div class="glass-effect rounded-lg p-4 card-hover">
+                                <h4 class="text-lg font-bold text-white">CompTIA Network+</h4>
+                                <p class="text-gray-300 text-sm">In Progress</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Achievements Section -->
+        <section id="achievements" class="section-padding bg-dark-card">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-16 gradient-text">Key Achievements</h2>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="glass-effect rounded-lg p-6 card-hover text-center">
+                        <div class="text-4xl font-bold text-neon-blue mb-2">48h</div>
+                        <h3 class="text-lg font-bold text-white mb-2">Disaster Recovery</h3>
+                        <p class="text-gray-300 text-sm">Successfully recovered critical university IT infrastructure within 48 hours post-disaster</p>
+                    </div>
+                    <div class="glass-effect rounded-lg p-6 card-hover text-center">
+                        <div class="text-4xl font-bold text-neon-green mb-2">50+</div>
+                        <h3 class="text-lg font-bold text-white mb-2">Users Supported</h3>
+                        <p class="text-gray-300 text-sm">Provided technical support for users at National Audit Office</p>
+                    </div>
+                    <div class="glass-effect rounded-lg p-6 card-hover text-center">
+                        <div class="text-4xl font-bold text-neon-pink mb-2">CTF</div>
+                        <h3 class="text-lg font-bold text-white mb-2">Competitions</h3>
+                        <p class="text-gray-300 text-sm">Active participant in PicoCTF & National Events, solving cryptography and forensics challenges</p>
+                    </div>
+                    <div class="glass-effect rounded-lg p-6 card-hover text-center">
+                        <div class="text-4xl font-bold text-neon-blue mb-2">5+</div>
+                        <h3 class="text-lg font-bold text-white mb-2">Projects Built</h3>
+                        <p class="text-gray-300 text-sm">Developed web applications, network tools, and security systems</p>
+                    </div>
+                    <div class="glass-effect rounded-lg p-6 card-hover text-center">
+                        <div class="text-4xl font-bold text-neon-green mb-2">3</div>
+                        <h3 class="text-lg font-bold text-white mb-2">Cisco Certifications</h3>
+                        <p class="text-gray-300 text-sm">Ethical Hacker, Cybersecurity, and Networking certifications</p>
+                    </div>
+                    <div class="glass-effect rounded-lg p-6 card-hover text-center">
+                        <div class="text-4xl font-bold text-neon-pink mb-2">Satellite</div>
+                        <h3 class="text-lg font-bold text-white mb-2">Simulation Calculator</h3>
+                        <p class="text-gray-300 text-sm">Developed a satellite simulation calculator adopted for use by the university</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects" class="section-padding bg-dark-card">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-16 gradient-text">Featured Projects</h2>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Project 1 -->
+                    <div class="project-card glass-effect rounded-lg p-6 card-hover">
+                        <div class="relative mb-4">
+                            <canvas id="project1-canvas" class="w-full h-48 rounded-lg"></canvas>
+                            <div class="absolute inset-0 bg-gradient-to-br from-neon-blue/20 to-neon-purple/20 rounded-lg"></div>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2 text-neon-blue">Web-Based Network Discovery Tool</h3>
+                        <p class="text-gray-300 mb-4">Full-stack Django web application that integrates Nmap for automated network device discovery and topology mapping. Created a user-friendly React-based front-end for non-technical staff to perform network audits.</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Django</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">React</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Nmap</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Network Security</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-primary text-sm px-4 py-2">Live Demo</button>
+                            <button class="glass-effect px-4 py-2 rounded-lg text-sm hover:neon-glow" onclick="window.open('https://github.com/esmwaSpyware/', '_blank')">GitHub</button>
+                        </div>
+                    </div>
+
+                    <!-- Project 2 -->
+                    <div class="project-card glass-effect rounded-lg p-6 card-hover">
+                        <div class="relative mb-4">
+                            <canvas id="project2-canvas" class="w-full h-48 rounded-lg"></canvas>
+                            <div class="absolute inset-0 bg-gradient-to-br from-neon-green/20 to-neon-blue/20 rounded-lg"></div>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2 text-neon-green">National Voting System</h3>
+                        <p class="text-gray-300 mb-4">Developed the frontend for a secure online voting platform using React, with client-side security features and Django backend integration. Implemented Role-Based Access Control (RBAC) and real-time result visualization.</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="text-xs glass-effect px-2 py-1 rounded">React</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Django</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">RBAC</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Security</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-primary text-sm px-4 py-2">Live Demo</button>
+                            <button class="glass-effect px-4 py-2 rounded-lg text-sm hover:neon-glow" onclick="window.open('https://github.com/esmwaSpyware/', '_blank')">GitHub</button>
+                        </div>
+                    </div>
+
+                    <!-- Project 3 -->
+                    <div class="project-card glass-effect rounded-lg p-6 card-hover">
+                        <div class="relative mb-4">
+                            <canvas id="project3-canvas" class="w-full h-48 rounded-lg"></canvas>
+                            <div class="absolute inset-0 bg-gradient-to-br from-neon-pink/20 to-neon-purple/20 rounded-lg"></div>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2 text-neon-pink">Red Team Command & Control (C2) System</h3>
+                        <p class="text-gray-300 mb-4">Built a custom C2 system for red team exercises, featuring encrypted communication channels between server and implants to evade detection. Demonstrates deep understanding of offensive security tools and tradecraft.</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Python</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Encryption</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Red Team</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Cybersecurity</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-primary text-sm px-4 py-2">Live Demo</button>
+                            <button class="glass-effect px-4 py-2 rounded-lg text-sm hover:neon-glow" onclick="window.open('https://github.com/esmwaSpyware/', '_blank')">GitHub</button>
+                        </div>
+                    </div>
+
+                    <!-- Project 4 -->
+                    <div class="project-card glass-effect rounded-lg p-6 card-hover">
+                        <div class="relative mb-4">
+                            <canvas id="project4-canvas" class="w-full h-48 rounded-lg"></canvas>
+                            <div class="absolute inset-0 bg-gradient-to-br from-neon-blue/20 to-neon-green/20 rounded-lg"></div>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2 text-neon-blue">Motorcycle Spare Parts Management System</h3>
+                        <p class="text-gray-300 mb-4">Comprehensive business management system using Flask backend with SQLite database. Implemented sales tracking, inventory management, expense monitoring, and automated financial reporting with interactive data visualization dashboards.</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Flask</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">SQLite</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">JavaScript</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Data Visualization</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-primary text-sm px-4 py-2">Live Demo</button>
+                            <button class="glass-effect px-4 py-2 rounded-lg text-sm hover:neon-glow" onclick="window.open('https://github.com/esmwaSpyware/', '_blank')">GitHub</button>
+                        </div>
+                    </div>
+
+                    <!-- Project 5 -->
+                    <div class="project-card glass-effect rounded-lg p-6 card-hover">
+                        <div class="relative mb-4">
+                            <canvas id="project5-canvas" class="w-full h-48 rounded-lg"></canvas>
+                            <div class="absolute inset-0 bg-gradient-to-br from-neon-green/20 to-neon-pink/20 rounded-lg"></div>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2 text-neon-green">Swahili Blood Donation Web Application</h3>
+                        <p class="text-gray-300 mb-4">Tanzania's first Swahili-language blood donation platform, facilitating donor and recipient matching. Managed the full development lifecycle from concept to deployment using modern tech stack.</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Web Development</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Swahili</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Healthcare</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Social Impact</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-primary text-sm px-4 py-2">Live Demo</button>
+                            <button class="glass-effect px-4 py-2 rounded-lg text-sm hover:neon-glow" onclick="window.open('https://github.com/esmwaSpyware/', '_blank')">GitHub</button>
+                        </div>
+                    </div>
+
+                    <!-- Project 6 -->
+                    <div class="project-card glass-effect rounded-lg p-6 card-hover">
+                        <div class="relative mb-4">
+                            <canvas id="project6-canvas" class="w-full h-48 rounded-lg"></canvas>
+                            <div class="absolute inset-0 bg-gradient-to-br from-neon-pink/20 to-neon-blue/20 rounded-lg"></div>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2 text-neon-pink">Calibration of AV Transmission Systems</h3>
+                        <p class="text-gray-300 mb-4">Applied knowledge of digital signal processing and RF principles to calibrate audio-visual transmission equipment in a lab environment, ensuring signal quality and compliance with broadcast standards.</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="text-xs glass-effect px-2 py-1 rounded">RF Engineering</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Signal Processing</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Broadcast Standards</span>
+                            <span class="text-xs glass-effect px-2 py-1 rounded">Calibration</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-primary text-sm px-4 py-2">Live Demo</button>
+                            <button class="glass-effect px-4 py-2 rounded-lg text-sm hover:neon-glow" onclick="window.open('https://github.com/esmwaSpyware/', '_blank')">GitHub</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Languages Section -->
+        <section id="languages" class="section-padding">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-16 gradient-text">Languages</h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="glass-effect rounded-lg p-6 card-hover text-center">
+                        <div class="text-4xl font-bold text-neon-blue mb-2">English</div>
+                        <h3 class="text-lg font-bold text-white mb-2">Fluent</h3>
+                        <p class="text-gray-300 text-sm">Professional communication and technical documentation</p>
+                    </div>
+                    <div class="glass-effect rounded-lg p-6 card-hover text-center">
+                        <div class="text-4xl font-bold text-neon-green mb-2">Kiswahili</div>
+                        <h3 class="text-lg font-bold text-white mb-2">Fluent</h3>
+                        <p class="text-gray-300 text-sm">Native language with local market expertise</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="section-padding">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-16 gradient-text">Get In Touch</h2>
+                <div class="grid md:grid-cols-2 gap-12">
+                    <div class="space-y-6">
+                        <h3 class="text-2xl font-bold text-neon-blue">Let's Connect</h3>
+                        <p class="text-lg text-gray-300">
+                            I'm always interested in new opportunities and exciting projects. 
+                            Whether you have a question or just want to say hi, I'll try my best to get back to you!
+                        </p>
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 glass-effect rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-neon-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="font-semibold">Email</p>
+                                    <p class="text-gray-300">
+                                        <a href="mailto:exaudmwakitega69@gmail.com" class="hover:text-neon-blue transition-colors">exaudmwakitega69@gmail.com</a>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 glass-effect rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-neon-blue" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="font-semibold">GitHub</p>
+                                    <p class="text-gray-300">
+                                        <a href="https://github.com/esmwaSpyware/" target="_blank" class="hover:text-neon-blue transition-colors">github.com/esmwaSpyware</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <form class="space-y-6" id="contact-form">
+                        <div>
+                            <label for="name" class="block text-sm font-medium mb-2">Name</label>
+                            <input type="text" id="name" name="name" required 
+                                   class="w-full px-4 py-3 glass-effect rounded-lg focus:neon-glow focus:outline-none transition-all duration-300">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium mb-2">Email</label>
+                            <input type="email" id="email" name="email" required 
+                                   class="w-full px-4 py-3 glass-effect rounded-lg focus:neon-glow focus:outline-none transition-all duration-300">
+                        </div>
+                        <div>
+                            <label for="message" class="block text-sm font-medium mb-2">Message</label>
+                            <textarea id="message" name="message" rows="4" required 
+                                      class="w-full px-4 py-3 glass-effect rounded-lg focus:neon-glow focus:outline-none transition-all duration-300 resize-none"></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary w-full">
+                            Send Message
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-dark-card py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <p class="text-gray-400">&copy; 2024 Exaudi Simon Mwakitega. Network & Broadcast Systems Engineer • Full-Stack Developer • Cybersecurity Specialist. Built with Three.js, GSAP, and Tailwind CSS.</p>
+            </div>
+        </footer>
+
+        <!-- Floating Action Button -->
+        <div class="fixed bottom-8 right-8 z-40 flex flex-col space-y-3">
+            <!-- Back to Top Button -->
+            <button id="back-to-top" class="glass-effect p-3 rounded-full hover:neon-glow transition-all duration-300 opacity-0 pointer-events-none">
+                <svg class="w-6 h-6 text-neon-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                </svg>
+            </button>
+            
+            <!-- Quick Contact Button -->
+            <button id="quick-contact" class="glass-effect p-3 rounded-full hover:neon-glow transition-all duration-300" title="Quick Contact">
+                <svg class="w-6 h-6 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+            </button>
+            
+            <!-- Download CV Button -->
+            <button id="download-cv" class="glass-effect p-3 rounded-full hover:neon-glow transition-all duration-300" title="Download CV">
+                <svg class="w-6 h-6 text-neon-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Reading Progress Indicator -->
+        <div id="reading-progress" class="fixed top-0 left-0 h-1 bg-gradient-to-r from-neon-blue to-neon-purple z-50 transition-all duration-300" style="width: 0%"></div>
+
+        <!-- Notification Toast -->
+        <div id="notification" class="fixed top-4 right-4 z-50 glass-effect rounded-lg p-4 shadow-lg transform translate-x-full transition-transform duration-300">
+            <div class="flex items-center space-x-3">
+                <div id="notification-icon" class="w-6 h-6 text-green-400">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p id="notification-title" class="font-semibold text-white">Success!</p>
+                    <p id="notification-message" class="text-sm text-gray-300">Your message has been sent.</p>
+                </div>
+                <button id="notification-close" class="text-gray-400 hover:text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="./scripts/main.js"></script>
+</body>
+</html>
