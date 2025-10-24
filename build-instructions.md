@@ -53,7 +53,7 @@ npx http-server
 ## File Structure After Build
 
 ```
-Desktop/
+whoami/
 ├── index.html              # Main portfolio file
 ├── package.json            # Dependencies
 ├── tailwind.config.js      # Tailwind config
